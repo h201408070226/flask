@@ -1,0 +1,21 @@
+.nav {
+text-align: center;
+background-color: #F5F5DC;
+}
+
+.nav ul {
+list-style-type: none;
+line-height: 5em;
+}
+
+.nav ul li {
+display: inline;
+}
+.nav a {
+text-decoration: none;
+background-color: #CCCCCC;
+}
+
+.nav a:hover {
+background-color: #E6E6FA;
+}
