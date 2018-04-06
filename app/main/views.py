@@ -1,6 +1,7 @@
 #encoding=utf8
-from flask import render_template, redirect, url_for, abort, flash
+from flask import render_template, redirect, url_for, abort, flash,jsonify, request
 from werkzeug import secure_filename
+from random import choice
 from flask_login import login_required, current_user
 from . import main
 from .forms import EditProfileForm, EditProfileAdminForm,ShowForm,CreateNewFlavorForm,CreateNewImageForm,CreateNewServer
@@ -11,7 +12,7 @@ import requests
 import urllib2
 import json
 
-@main.route('/')
+@main.route('/sdsf')
 def index():
     return render_template('index.html')
 
@@ -109,29 +110,64 @@ def getToken(user):
 
 ##################################glance的范围#################################################
 #获取images
-@main.route("/GetImageList/<Token>")
-@login_required
-def getImageList(Token):
-    baseurl="http://192.168.188.132:9292/v2/images"
-    headers={"Content-Type":"application/json","Accept":"application/json","X-Auth-Token":Token}
-    req=urllib2.Request(baseurl)
-    req.add_header("Content-Type","application/json")
-    req.add_header("Accept", "application/json")
-    req.add_header("X-Auth-Token", Token)
-    response=urllib2.urlopen(req)
-    json1=json.loads(response.read())
-    rootlist = json1.keys()
-    print rootlist
-    list=json1['images']
-    print list[0]
-    print json1['images'][0]['self']
-    form =ShowForm()
-    str=""
-    for (k,v) in json1['images'][0].items():
-        print type(k),type(v)
-    form.getData.data=str
-    print type(json1['images'][0])
-    return render_template("main/CreateNewFlavor.html",form=form)
+@main.route("/GetImageList")
+# @login_required
+def getImageList():
+    # Token=getToken('admin')
+    data = []
+    d = {}
+    # baseurl="http://192.168.188.132:9292/v2/images"
+    # headers={"Content-Type":"application/json","Accept":"application/json","X-Auth-Token":Token}
+    # req=urllib2.Request(baseurl)
+    # req.add_header("Content-Type","application/json")
+    # req.add_header("Accept", "application/json")
+    # req.add_header("X-Auth-Token", Token)
+    # response=urllib2.urlopen(req)
+    # json1=response.read()
+    # List1=json1['images']
+    # for list in List1:
+    #     d["ImageID"]=list["ImageID"]
+    #     d["ImageName"]=list["ImageName"]
+    #     d["status"]=list["status"]
+    #     d["size"]=list["size"]
+    #     d["disk_format"] = list["disk_format"]
+    #     d["owner"] = list["owner"]
+    #     d["visibility"] = list["visibility"]
+    #     data.append(d)
+    data=[{'status': 'active', 'disk_format': 'qcow2', 'visibility': 'private', 'ImageID': 'b2173dd3-7ad6-4362-baa6-a68bce3565cc', 'ImageName': 'cirros', 'owner': '1c9f71edc1304c1ca6754af18f9ac30d', 'size': 12716032}, {'status': 'queued', 'disk_format': 'raw', 'visibility': 'private', 'ImageID': 'b2173dd3-7ad6-4362-baa6-a68bce3565cb', 'ImageName': 'Ubuntu', 'owner': '1c9f71edc1304c1ca6754af18f9ac30d', 'size': 'null'}, {'status': 'active', 'disk_format': 'qcow2', 'visibility': 'public', 'ImageID': '4535270a-4e39-42f9-9612-3eabcb5fabf9', 'ImageName': 'cirros', 'owner': '1c9f71edc1304c1ca6754af18f9ac30d', 'size': 13287936}]
+
+    if request.method == 'GET':
+        info = request.values
+        limit = info.get('limit', 10)  # 每页显示的条数
+        offset = info.get('offset', 0)  # 分片数，(页码-1)*limit，它表示一段数据的起点
+        print('get', limit)
+        print('get  offset', offset)
+        return jsonify({'total': len(data), 'rows': data[int(offset):(int(offset) + int(limit))]})
+
+@main.route("/ShowImagePage")
+def show_image_page():
+    return render_template("main/ShowImagePage.html")
+@main.route("/getImagedata")
+def getImagedata():
+    data=[]
+    d={
+            "ImageID": "b2173dd3-7ad6-4362-baa6-a68bce3565cb",
+            "ImageName": "Ubuntu",
+            "status": "queued",
+            "size": 12716032,
+            "disk_format": "qcow2",
+            "owner": "1c9f71edc1304c1ca6754af18f9ac30d",
+            "visibility": "private",
+        }
+    data.append(d)
+    data=[{'status': 'active', 'disk_format': 'qcow2', 'visibility': 'private', 'ImageID': 'b2173dd3-7ad6-4362-baa6-a68bce3565cc', 'ImageName': 'cirros', 'owner': '1c9f71edc1304c1ca6754af18f9ac30d', 'size': 12716032}, {'status': 'queued', 'disk_format': 'raw', 'visibility': 'private', 'ImageID': 'b2173dd3-7ad6-4362-baa6-a68bce3565cb', 'ImageName': 'Ubuntu', 'owner': '1c9f71edc1304c1ca6754af18f9ac30d', 'size': 'null'}, {'status': 'active', 'disk_format': 'qcow2', 'visibility': 'public', 'ImageID': '4535270a-4e39-42f9-9612-3eabcb5fabf9', 'ImageName': 'cirros', 'owner': '1c9f71edc1304c1ca6754af18f9ac30d', 'size': 13287936}]
+    if request.method == 'GET':
+        info = request.values
+        limit = info.get('limit', 10)  # 每页显示的条数
+        offset = info.get('offset', 0)  # 分片数，(页码-1)*limit，它表示一段数据的起点
+        print('get', limit)
+        print('get  offset', offset)
+        return jsonify({'total': len(data), 'rows': data[int(offset):(int(offset) + int(limit))]})
 
 #新建Image
 @main.route("/CreateNewImage",methods=['POST','GET'])
@@ -145,7 +181,9 @@ def create_new_image():
             "container_format":form.container_format.data,
             "disk_format":form.disk_format.data,
             "name":form.name.data,
-            "id":form.id.data
+            "id":form.id.data,
+            "visibility":form.visibility.data
+
         }
         parmas = json.dumps(values)
         Token = getToken('admin')
@@ -296,3 +334,34 @@ def create_new_servers():
 
 
 
+# @main.route('/jsondata', methods=['POST', 'GET'])
+# def infos():
+#     """
+#      请求的数据源，该函数模拟数据库中存储的数据，返回以下这种数据的列表：
+#     {'name': '香蕉', 'id': 1, 'price': '10'}
+#     {'name': '苹果', 'id': 2, 'price': '10'}
+#     """
+#     data = []
+#     names = ['香', '草', '瓜', '果', '桃', '梨', '莓', '橘', '蕉', '苹']
+#     for i in range(1, 1001):
+#         d = {}
+#         d['id'] = i
+#         d['name'] = choice(names) + choice(names)  # 随机选取汉字并拼接
+#         d['price'] = '10'
+#         data.append(d)
+#     if request.method == 'POST':
+#         print('post')
+#     if request.method == 'GET':
+#         info = request.values
+#         limit = info.get('limit', 10)  # 每页显示的条数
+#         offset = info.get('offset', 0)  # 分片数，(页码-1)*limit，它表示一段数据的起点
+#         print('get', limit)
+#         print('get  offset', offset)
+#         return jsonify({'total': len(data), 'rows': data[int(offset):(int(offset) + int(limit))]})
+#         # 注意total与rows是必须的两个参数，名字不能写错，total是数据的总长度，rows是每页要显示的数据,它是一个列表
+#         # 前端根本不需要指定total和rows这俩参数，他们已经封装在了bootstrap table里了
+#
+#
+# @main.route('/')
+# def hi():
+#     return render_template('test/table-test1.html')
