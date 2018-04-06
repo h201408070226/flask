@@ -111,7 +111,7 @@ def getToken(user):
 ##################################glance的范围#################################################
 #获取images
 @main.route("/GetImageList")
-# @login_required
+@login_required
 def getImageList():
     # Token=getToken('admin')
     data = []
@@ -147,27 +147,27 @@ def getImageList():
 @main.route("/ShowImagePage")
 def show_image_page():
     return render_template("main/ShowImagePage.html")
-@main.route("/getImagedata")
-def getImagedata():
-    data=[]
-    d={
-            "ImageID": "b2173dd3-7ad6-4362-baa6-a68bce3565cb",
-            "ImageName": "Ubuntu",
-            "status": "queued",
-            "size": 12716032,
-            "disk_format": "qcow2",
-            "owner": "1c9f71edc1304c1ca6754af18f9ac30d",
-            "visibility": "private",
-        }
-    data.append(d)
-    data=[{'status': 'active', 'disk_format': 'qcow2', 'visibility': 'private', 'ImageID': 'b2173dd3-7ad6-4362-baa6-a68bce3565cc', 'ImageName': 'cirros', 'owner': '1c9f71edc1304c1ca6754af18f9ac30d', 'size': 12716032}, {'status': 'queued', 'disk_format': 'raw', 'visibility': 'private', 'ImageID': 'b2173dd3-7ad6-4362-baa6-a68bce3565cb', 'ImageName': 'Ubuntu', 'owner': '1c9f71edc1304c1ca6754af18f9ac30d', 'size': 'null'}, {'status': 'active', 'disk_format': 'qcow2', 'visibility': 'public', 'ImageID': '4535270a-4e39-42f9-9612-3eabcb5fabf9', 'ImageName': 'cirros', 'owner': '1c9f71edc1304c1ca6754af18f9ac30d', 'size': 13287936}]
-    if request.method == 'GET':
-        info = request.values
-        limit = info.get('limit', 10)  # 每页显示的条数
-        offset = info.get('offset', 0)  # 分片数，(页码-1)*limit，它表示一段数据的起点
-        print('get', limit)
-        print('get  offset', offset)
-        return jsonify({'total': len(data), 'rows': data[int(offset):(int(offset) + int(limit))]})
+# @main.route("/getImagedata")
+# def getImagedata():
+#     data=[]
+#     d={
+#             "ImageID": "b2173dd3-7ad6-4362-baa6-a68bce3565cb",
+#             "ImageName": "Ubuntu",
+#             "status": "queued",
+#             "size": 12716032,
+#             "disk_format": "qcow2",
+#             "owner": "1c9f71edc1304c1ca6754af18f9ac30d",
+#             "visibility": "private",
+#         }
+#     data.append(d)
+#     data=[{'status': 'active', 'disk_format': 'qcow2', 'visibility': 'private', 'ImageID': 'b2173dd3-7ad6-4362-baa6-a68bce3565cc', 'ImageName': 'cirros', 'owner': '1c9f71edc1304c1ca6754af18f9ac30d', 'size': 12716032}, {'status': 'queued', 'disk_format': 'raw', 'visibility': 'private', 'ImageID': 'b2173dd3-7ad6-4362-baa6-a68bce3565cb', 'ImageName': 'Ubuntu', 'owner': '1c9f71edc1304c1ca6754af18f9ac30d', 'size': 'null'}, {'status': 'active', 'disk_format': 'qcow2', 'visibility': 'public', 'ImageID': '4535270a-4e39-42f9-9612-3eabcb5fabf9', 'ImageName': 'cirros', 'owner': '1c9f71edc1304c1ca6754af18f9ac30d', 'size': 13287936}]
+#     if request.method == 'GET':
+#         info = request.values
+#         limit = info.get('limit', 10)  # 每页显示的条数
+#         offset = info.get('offset', 0)  # 分片数，(页码-1)*limit，它表示一段数据的起点
+#         print('get', limit)
+#         print('get  offset', offset)
+#         return jsonify({'total': len(data), 'rows': data[int(offset):(int(offset) + int(limit))]})
 
 #新建Image
 @main.route("/CreateNewImage",methods=['POST','GET'])
@@ -206,7 +206,6 @@ def create_new_image():
         request.add_header("X-Auth-Token", Token)
         request.get_method = lambda: 'PUT'
         response = urllib2.urlopen(request)
-
         print response.read()
     return render_template("main/CreateNewImage.html", form=form)
 
@@ -326,8 +325,12 @@ def create_new_servers():
         headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
         request = urllib2.Request(url, parmas, headers)
         response = urllib2.urlopen(request)
-        print response.read()
-
+        result=response.read()
+        ServerId=result["server"]["id"]
+        #将用户id和server的id存储在一个数据库中，每次我们查询的时候只能取得的是当前用户所拥有的server
+        server_user=User_for_Server(UserID=current_user.id,ServerID=ServerId)
+        db.session.add(server_user)
+        db.session.commit()
     return render_template("main/CreateNewServer.html",form=form)
 
 

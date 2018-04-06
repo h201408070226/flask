@@ -1,4 +1,7 @@
 #encoding=utf8
+import sys
+reload(sys)
+sys.setdefaultencoding('utf8')
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, BooleanField, SelectField,\
     SubmitField,IntegerField,FileField
@@ -70,9 +73,9 @@ class CreateNewImageForm(FlaskForm):
     disk_format=StringField("please input disk_format",validators=[Required()])
     name=StringField("please input the image name",validators=[Required()])
     id=StringField('please input the image id',validators=[Required()])
-    visibility=SelectField("please choose the visibility",choices=[("public","shared","private")])
-    ImageFile=FileField("please choose your ImageFile")
+    visibility=SelectField("please choose the visibility",choices=[('private',u'私有'), ('public', u'公开'),("share","共享")])
 
+    ImageFile=FileField("please choose your ImageFile")
     submit=SubmitField("Submit")
 
 #用来新建新的实例
