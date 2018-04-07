@@ -111,30 +111,30 @@ def getToken(user):
 ##################################glance的范围#################################################
 #获取images
 @main.route("/GetImageList")
-@login_required
+# @login_required
 def getImageList():
-    # Token=getToken('admin')
+    Token=getToken('admin')
     data = []
-    d = {}
-    # baseurl="http://192.168.188.132:9292/v2/images"
-    # headers={"Content-Type":"application/json","Accept":"application/json","X-Auth-Token":Token}
-    # req=urllib2.Request(baseurl)
-    # req.add_header("Content-Type","application/json")
-    # req.add_header("Accept", "application/json")
-    # req.add_header("X-Auth-Token", Token)
-    # response=urllib2.urlopen(req)
-    # json1=response.read()
-    # List1=json1['images']
-    # for list in List1:
-    #     d["ImageID"]=list["ImageID"]
-    #     d["ImageName"]=list["ImageName"]
-    #     d["status"]=list["status"]
-    #     d["size"]=list["size"]
-    #     d["disk_format"] = list["disk_format"]
-    #     d["owner"] = list["owner"]
-    #     d["visibility"] = list["visibility"]
-    #     data.append(d)
-    data=[{'status': 'active', 'disk_format': 'qcow2', 'visibility': 'private', 'ImageID': 'b2173dd3-7ad6-4362-baa6-a68bce3565cc', 'ImageName': 'cirros', 'owner': '1c9f71edc1304c1ca6754af18f9ac30d', 'size': 12716032}, {'status': 'queued', 'disk_format': 'raw', 'visibility': 'private', 'ImageID': 'b2173dd3-7ad6-4362-baa6-a68bce3565cb', 'ImageName': 'Ubuntu', 'owner': '1c9f71edc1304c1ca6754af18f9ac30d', 'size': 'null'}, {'status': 'active', 'disk_format': 'qcow2', 'visibility': 'public', 'ImageID': '4535270a-4e39-42f9-9612-3eabcb5fabf9', 'ImageName': 'cirros', 'owner': '1c9f71edc1304c1ca6754af18f9ac30d', 'size': 13287936}]
+    baseurl="http://192.168.188.132:9292/v2/images"
+    headers={"Content-Type":"application/json","Accept":"application/json","X-Auth-Token":Token}
+    req=urllib2.Request(baseurl)
+    req.add_header("Content-Type","application/json")
+    req.add_header("Accept", "application/json")
+    req.add_header("X-Auth-Token", Token)
+    response=urllib2.urlopen(req)
+    json1=json.loads(response.read())
+    List1=json1['images']
+    for list in List1:
+        d = {}
+        d["ImageID"]=list["id"]
+        d["ImageName"]=list["name"]
+        d["status"]=list["status"]
+        d["size"]=list["size"]
+        d["disk_format"] = list["disk_format"]
+        d["owner"] = list["owner"]
+        d["visibility"] = list["visibility"]
+        data.append(d)
+    # data=[{'status': 'active', 'disk_format': 'qcow2', 'visibility': 'private', 'ImageID': 'b2173dd3-7ad6-4362-baa6-a68bce3565cc', 'ImageName': 'cirros', 'owner': '1c9f71edc1304c1ca6754af18f9ac30d', 'size': 12716032}, {'status': 'queued', 'disk_format': 'raw', 'visibility': 'private', 'ImageID': 'b2173dd3-7ad6-4362-baa6-a68bce3565cb', 'ImageName': 'Ubuntu', 'owner': '1c9f71edc1304c1ca6754af18f9ac30d', 'size': 'null'}, {'status': 'active', 'disk_format': 'qcow2', 'visibility': 'public', 'ImageID': '4535270a-4e39-42f9-9612-3eabcb5fabf9', 'ImageName': 'cirros', 'owner': '1c9f71edc1304c1ca6754af18f9ac30d', 'size': 13287936}]
 
     if request.method == 'GET':
         info = request.values
@@ -227,8 +227,8 @@ def delete_a_inage(ImageId):
 ##############################################nova的范围##################################
 #新建flavor
 @main.route("/CreateNewFlavor",methods=['POST','GET'])
-@login_required
-@admin_required
+# @login_required
+# @admin_required
 def create_new_flavor():
     url="http://192.168.188.132:8774/v2.1/flavors"
     form = CreateNewFlavorForm()
@@ -243,29 +243,73 @@ def create_new_flavor():
         "rxtx_factor": 2.0,
     }
 }
-        print form.file.data
+
         parmas=json.dumps(values)
         Token=getToken('admin')
         print Token
         headers = {"Content-Type": "application/json", "Accept": "application/json","X-Auth-Token":Token}
         request=urllib2.Request(url,parmas,headers)
         response=urllib2.urlopen(request)
-        print response.read()
+        return redirect("ShowFlavorPage")
     return render_template("main/CreateNewFlavor.html", form=form)
 
 #展示所有的flavor有哪些
-@main.route("/Show_All_Flavor")
-@login_required
+@main.route("/GetFlavorList")
+# @login_required
 def show_all_flavor():
+    data = []
+
+    # 下面的方法中我们首先通过获取url获取到所有的flavor的id，然后在根据每个id来构造新的url2，
+    # 然后获取没有个flavor的Detal，最后将这些信息组织成data返回
     url="http://192.168.188.132:8774/v2.1/flavors"
     Token=getToken('admin')
-    request=urllib2.Request(url)
-    request.add_header("Content-Type","application/json")
-    request.add_header("Accept","application/json")
-    request.add_header("X-Auth-Token",Token)
-    response=urllib2.urlopen(request)
-    print response.read()
-    return
+    req=urllib2.Request(url)
+    req.add_header("Content-Type","application/json")
+    req.add_header("Accept","application/json")
+    req.add_header("X-Auth-Token",Token)
+    response=urllib2.urlopen(req)
+
+    flavorsList=json.loads(response.read())["flavors"]
+
+    IdList=[]
+    for i in range(len(flavorsList)):
+        d = {}
+        #dict（字典）赋给list的是一个位置，对于第一种代码，dictionary定义在循环外，
+        # 每次使用list.append(dictionary)赋给  list的都是相同的位置，而在同一位置的dict的值已经改变了，
+        # 所以list取到的之前位置的值改变了，表现出后面数据覆盖前面数据的表象。dict定义在循环内，
+        # 相当于每一次循环生成一个dictionary，占用不同的位置存储值，所以可以赋给list不同元素不同的位置，获得不同的值
+        id=flavorsList[i]["id"]
+        IdList.append(flavorsList[i]["id"])
+        url2=url+"/"+id#修改网址为flavors/{flavor_id}，来获取每个flavor的细节
+        print url2
+        req = urllib2.Request(url2)
+        req.add_header("Content-Type", "application/json")
+        req.add_header("Accept", "application/json")
+        req.add_header("X-Auth-Token", Token)
+        response = urllib2.urlopen(req)
+        flavorDetial=json.loads(response.read())["flavor"]
+        d["FlavorID"]=flavorDetial["id"]
+        d["FlavorName"]=flavorDetial["name"]
+        d["ram"]=flavorDetial["ram"]
+        d["vcpus"]=flavorDetial["vcpus"]
+        d["disk"]=flavorDetial["disk"]
+        d["rxtx_factor"]=flavorDetial["rxtx_factor"]
+        data.append(d)
+        print data
+    # data=[{'FlavorID': '4', 'ram': 200, 'FlavorName': 'flavor2', 'vcpus': 1, 'rxtx_factor': 2, 'disk': 5}]
+    # print data
+
+    if request.method == 'GET':
+        info = request.values
+        limit = info.get('limit', 10)  # 每页显示的条数
+        offset = info.get('offset', 0)  # 分片数，(页码-1)*limit，它表示一段数据的起点
+        print('get', limit)
+        print('get  offset', offset)
+        return jsonify({'total': len(data), 'rows': data[int(offset):(int(offset) + int(limit))]})
+
+@main.route("/ShowFlavorPage")
+def show_flavor_page():
+    return render_template("main/ShowFlavorPage.html")
 
 #展示所有的servers
 @main.route('/Show_All_Servers')
@@ -273,7 +317,7 @@ def show_all_flavor():
 @permission_required(Permission.SHOW_ERERY_SERVER)
 def show_all_servers():
     url="http://192.168.188.132:8774/v2.1/servers"
-    Id=User.query.filter_by(name=current_user.__name__).first().id
+    Id=User.query.filter_by(username=current_user.username).first().id
     ServerList=User_for_Server.query.filter_by(id=Id).ServerID#通过查询User和Server的关系数据库得到当前数据库的Server的ID,从而将这些Server从服务器中取出来
     Token=getToken(user)
     for serverlist in ServerList:

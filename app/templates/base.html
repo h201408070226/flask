@@ -144,17 +144,17 @@ a{text-decoration:none;}
 	<div class="leftsidebar_box">
 		<div class="line"></div>
 		<dl class="system_log">
-			<dt onClick="changeImage()">网络<img src="/static/images/left/select_xl01.png"></dt>
-			<dd class="first_dd"><a href="#">充值记录</a></dd>
-			<dd><a href="#">短信充值记录</a></dd>
+			<dt onClick="changeImage()">Flavor<img src="/static/images/left/select_xl01.png"></dt>
+			<dd class="first_dd"><a href="{{ url_for('main.show_flavor_page') }}">展示所有的Flavor</a></dd>
+			<dd><a href="{{ url_for('main.create_new_flavor') }}">新建Flavor</a></dd>
 			<dd><a href="#">消费记录</a></dd>
 			<dd><a href="#">操作记录</a></dd>
 		</dl>
 
 		<dl class="custom">
 			<dt onClick="changeImage()">镜像<img src="/static/images/left/select_xl01.png"></dt>
-			<dd class="first_dd"><a href="#">客户管理</a></dd>
-			<dd><a href="#">试用/成交客户管理</a></dd>
+			<dd class="first_dd"><a href="{{ url_for('main.show_image_page') }}">展示所有镜像</a></dd>
+			<dd><a href="{{ url_for('main.create_new_image') }}">新建镜像</a></dd>
 			<dd><a href="#">未成交客户管理</a></dd>
 			<dd><a href="#">即将到期客户管理</a></dd>
 		</dl>

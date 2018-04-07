@@ -64,7 +64,6 @@ class CreateNewFlavorForm(FlaskForm):
     disk=IntegerField("flavor disk",validators=[Required()])
     id=StringField(" flavor  id",validators=[Required()])
     #description=StringField("flavor description ",validators=[Required()])
-    file=FileField("please choose the file",validators=[Required()])
     submit=SubmitField("Submit")
 
 #用来新建image的form
