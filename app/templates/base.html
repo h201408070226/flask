@@ -144,7 +144,7 @@ a{text-decoration:none;}
 	<div class="leftsidebar_box">
 		<div class="line"></div>
 		<dl class="system_log">
-			<dt onClick="changeImage()">Flavor<img src="/static/images/left/select_xl01.png"></dt>
+			<dt >Flavor<img src="/static/images/left/select_xl01.png"></dt>
 			<dd class="first_dd"><a href="{{ url_for('main.show_flavor_page') }}">展示所有的Flavor</a></dd>
 			<dd><a href="{{ url_for('main.create_new_flavor') }}">新建Flavor</a></dd>
 			<dd><a href="#">消费记录</a></dd>
@@ -160,8 +160,8 @@ a{text-decoration:none;}
 		</dl>
 
 		<dl class="channel">
-			<dt>实例<img src="/static/images/left/select_xl01.png"></dt>
-			<dd class="first_dd"><a href="#">渠道主页</a></dd>
+			<dt onClick="changeImage()">实例<img src="/static/images/left/select_xl01.png"></dt>
+			<dd class="first_dd"><a href="{{  url_for('main.create_new_servers') }}">新建实例</a></dd>
 			<dd><a href="#">渠道标准管理</a></dd>
 			<dd><a href="#">系统通知</a></dd>
 			<dd><a href="#">渠道商管理</a></dd>
@@ -176,12 +176,12 @@ a{text-decoration:none;}
 		</dl>
 
 		<dl class="cloud">
-			<dt>大数据云平台<img src="/static/images/left/select_xl01.png"></dt>
+			<dt onClick="changeImage()">大数据云平台<img src="/static/images/left/select_xl01.png"></dt>
 			<dd class="first_dd"><a href="#">平台运营商管理</a></dd>
 		</dl>
 
 		<dl class="syetem_management">
-			<dt>系统管理<img src="/static/images/left/select_xl01.png"></dt>
+			<dt onClick="changeImage()">系统管理<img src="/static/images/left/select_xl01.png"></dt>
 			<dd class="first_dd"><a href="#">后台用户管理</a></dd>
 			<dd><a href="#">角色管理</a></dd>
 			<dd><a href="#">客户类型管理</a></dd>
@@ -193,14 +193,14 @@ a{text-decoration:none;}
 		</dl>
 
 		<dl class="source">
-			<dt>素材库管理<img src="/static/images/left/select_xl01.png"></dt>
+			<dt onClick="changeImage()">素材库管理<img src="/static/images/left/select_xl01.png"></dt>
 			<dd class="first_dd"><a href="#">图片库</a></dd>
 			<dd><a href="#">链接库</a></dd>
 			<dd><a href="#">推广管理</a></dd>
 		</dl>
 
 		<dl class="statistics">
-			<dt>统计分析<img src="/static/images/left/select_xl01.png"></dt>
+			<dt onClick="changeImage()">统计分析<img src="/static/images/left/select_xl01.png"></dt>
 			<dd class="first_dd"><a href="#">客户统计</a></dd>
 		</dl>
 
@@ -210,9 +210,6 @@ a{text-decoration:none;}
 
     {% block page_content %}
 
-	{% endblock %}
-
-	{% block page_content2 %}
 	{% endblock %}
 </div>
 {% endblock %}
@@ -225,15 +222,15 @@ a{text-decoration:none;}
 <script type="text/javascript">
 
 $(".leftsidebar_box dt").css({"background-color":"#3992d0"});
-$(".leftsidebar_box dt img").attr("src","images/left/select_xl01.png");
+$(".leftsidebar_box dt img").attr("src","/static/images/left/select_xl01.png");
 $(function(){
 	$(".leftsidebar_box dd").hide();
 	$(".leftsidebar_box dt").click(function(){
 		$(".leftsidebar_box dt").css({"background-color":"#3992d0"})
 		$(this).css({"background-color": "#317eb4"});
 		$(this).parent().find('dd').removeClass("menu_chioce");
-		$(".leftsidebar_box dt img").attr("src","images/left/select_xl01.png");
-		$(this).parent().find('img').attr("src","images/left/select_xl.png");
+		$(".leftsidebar_box dt img").attr("src","/static/images/left/select_xl01.png");
+		$(this).parent().find('img').attr("src","/static/images/left/select_xl.png");
 		$(".menu_chioce").slideUp();
 		$(this).parent().find('dd').slideToggle();
 		$(this).parent().find('dd').addClass("menu_chioce");

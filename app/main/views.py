@@ -12,7 +12,7 @@ import requests
 import urllib2
 import json
 
-@main.route('/sdsf')
+@main.route('/')
 def index():
     return render_template('index.html')
 
