@@ -1,5 +1,6 @@
+#encoding=utf-8
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField,SelectField
 from wtforms.validators import Required, Length, Email, Regexp, EqualTo
 from wtforms import ValidationError
 from ..models import User
@@ -23,6 +24,7 @@ class RegistrationForm(FlaskForm):
     password = PasswordField('Password', validators=[
         Required(), EqualTo('password2', message='Passwords must match.')])
     password2 = PasswordField('Confirm password', validators=[Required()])
+    project=SelectField(u"请选择用户所在的项目")
     submit = SubmitField('Register')
 
     def validate_email(self, field):

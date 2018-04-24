@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% block title %}Flasky-CreateNewFlavor{% endblock %}
+{% block page_content %}
+<div class="page-header">
+    <h1>新建Flavor</h1>
+</div>
+<div class="col-lg-12">
+    <select style="height:25px;width:160px;" onchange="choince(this)">
+    <option value="err" selected>选择查找方式</option>
+    <option value="low" >简单查询</option>
+    <option value="mid" >模糊检索</option>
+    <option value="hih" >高级搜索</option>
+    </select>
+    {{ wtf.quick_form(form) }}
+    {% if file_url %}
+    <br><img src="{{ file_url }}">
+    {% endif %}
+</div>
+
+{% endblock %}
+{% block scripts %}
+{{ super() }}
+<script type="text/javascript">
+    function changePage(){
+        window.location.href="{{ url_for('main.create_new_flavor') }}";
+    }
+    function choince(value){
+    var selectedOption=value.options[value.selectedIndex];
+    //alert(selectedOption.value);
+    if(selectedOption.value=="low"){
+				window.location.href="{{ url_for('main.create_new_flavor') }}";
+    }else if(selectedOption.value=="mid"){
+	 			window.location.href="{{ url_for('main.create_new_image') }}";
+    }else if(selectedOption.value=="hih"){
+				window.location.href="{{ url_for('main.create_new_keypair') }}";
+    }
+}
+</script>
+{% endblock %}

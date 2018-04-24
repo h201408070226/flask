@@ -1,13 +1,15 @@
-from flask import render_template, redirect, request, url_for, flash
+#encoding=utf-8
+from flask import render_template, redirect, request, url_for, flash,current_app
 from flask_login import login_user, logout_user, login_required, \
     current_user
 from . import auth
+from ..main.views import getToken,create_new_user,role_user
 from .. import db
 from ..models import User
 from ..email import send_email
 from .forms import LoginForm, RegistrationForm, ChangePasswordForm,\
     PasswordResetRequestForm, PasswordResetForm, ChangeEmailForm
-
+from config import config
 
 @auth.before_app_request
 def before_request():
@@ -50,8 +52,16 @@ def logout():
 @auth.route('/register', methods=['GET', 'POST'])
 def register():
     form = RegistrationForm()
+
+    form.project.choices=[("271832","234234")]
     if form.validate_on_submit():
-        user = User(email=form.email.data,
+        d=create_new_user(current_app.config["Domein_id"],form.project.data,form.username.data,form.password.data,form.email.data,"true")
+        if form.email.data==current_app.config["FLASKY_ADMIN"]:#如果当前的用户是自己的话就要给他设置为admin的角色
+            role_user(d["project_id"],d["id"],current_app.config["Role_Admin"])
+        else:
+            role_user(d["project_id"], d["id"], current_app.config["Role_User"])
+        user = User(user_id=d["id"],
+                    email=form.email.data,
                     username=form.username.data,
                     password=form.password.data)
         db.session.add(user)

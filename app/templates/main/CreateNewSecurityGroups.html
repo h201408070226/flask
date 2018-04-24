@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% block title %}Flasky-CreateNewFlavor{% endblock %}
+{% block page_content %}
+<div class="page-header">
+    <h1>新建安全组</h1>
+</div>
+<div class="col-md-11">
+    {{ wtf.quick_form(form) }}
+
+</div>
+{% endblock %}

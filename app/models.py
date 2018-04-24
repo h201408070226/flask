@@ -63,7 +63,7 @@ class Role(db.Model):
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True)
+    #id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(64), unique=True, index=True)
     username = db.Column(db.String(64), unique=True, index=True)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
@@ -75,7 +75,11 @@ class User(UserMixin, db.Model):
     member_since = db.Column(db.DateTime(), default=datetime.utcnow)
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
     avatar_hash = db.Column(db.String(32))
-
+    project_id = db.Column(db.String(64))#用户对应的项目
+    user_id = db.Column(db.String(64),primary_key=True)#在openstack中用户对应的id
+    openstack_role_is=db.Column(db.String(64))#在openstack中当前用户对应的角色id
+    servers=db.relationship("Server_for_User",backref="users",lazy='dynamic')
+    tokens=db.relationship("Token_For_User",backref="users",lazy="dynamic")
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
         if self.role is None:
@@ -188,21 +192,28 @@ class AnonymousUser(AnonymousUserMixin):
 login_manager.anonymous_user = AnonymousUser
 
 #用来表示当前用户和实例之间的联系
-class User_for_Server(db.Model):
-    __tablename__="UserAndServer"
+class Server_for_User(db.Model):
+    __tablename__="server_for_user"
     id=db.Column(db.Integer,primary_key=True,index=True)
-    UserID=db.Column(db.Integer,db.ForeignKey('users.id'))
+    UserID=db.Column(db.String(64),db.ForeignKey('users.user_id'))
     ServerID=db.Column(db.String(64),unique=True,index=True)
 
 #用来存储用户和image的关系
-class User_for_Image(db.Model):
-    __tablename__="UserAndImage"
+#我觉得不是必要的，因为我们当前用户的角色在openstack中确认之后我们创建的image和
+# visibility为share和public的我们就会看到
+class Image_for_User(db.Model):
+    __tablename__="image_for_user"
     id=db.Column(db.Integer,primary_key=True,index=True)
-    UserID=db.Column(db.Integer,db.ForeignKey('Users,id'))
+    UserID=db.Column(db.String(64),db.ForeignKey('users.user_id'))
     ImageID=db.Column(db.String(128),unique=True)
     visibility=db.Column(db.String(64))#这个表示的是image的可见度，包括public，community，shared，private
 
-
+#为了避免反复请求token所需要的时间，将用户对应的id，和对应的token存储在特定的数据库中直到token失效才重新获取token
+class Token_For_User(db.Model):
+    __tablename__="token_for_user"
+    id=db.Column(db.Integer,primary_key=True,index=True)
+    User_ID=db.Column(db.String(64),db.ForeignKey('users.user_id'))
+    token=db.Column(db.String(256))
 
 @login_manager.user_loader
 def load_user(user_id):
