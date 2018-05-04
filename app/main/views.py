@@ -8,7 +8,7 @@ from .forms import EditProfileForm, EditProfileAdminForm,ShowForm,CreateNewFlavo
     CreateNewServerForm,TestField,CreateNewKeypairForm,ChangeServerFlavorForm,CreateNewKeypairForm,AddFloatIpForm,\
     AddSecurityGroupForm,DeleteFloatIpForm,DeleteSecurityGroupForm,ChangeAdministrativePasswordForm,\
     CreateServerBackUpForm,CreateServerImageForm,RebootServerForm,RebuildServerForm,ResureServerForm,AddFixedIpForm,\
-    DeleteFixedIpForm,CreateNewSecurityGroupsForm,MigrateServerForm
+    DeleteFixedIpForm,CreateNewSecurityGroupsForm,MigrateServerForm,AttachVolumeToServerForm
 from .. import db
 from ..models import Role, User,Permission,Server_for_User
 from ..decorators import admin_required,permission_required
@@ -278,7 +278,7 @@ def create_new_image():
 
         }
         parmas = json.dumps(values)
-        Token = getToken('admin')
+        Token = getToken("admin", "admin", "admin")
         print Token
         headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
         request = urllib2.Request(url, parmas, headers)
@@ -351,7 +351,7 @@ def create_new_flavor():
 @main.route("/GetFlavor/<flavorid>")
 def show_a_flavor_detail(flavorid):
     url = "http://192.168.188.132:8774/v2.1/flavors/"+flavorid
-    Token = getToken('admin')
+    Token = getToken("admin", "admin", "admin")
     req = urllib2.Request(url)
     req.add_header("Content-Type", "application/json")
     req.add_header("Accept", "application/json")
@@ -424,7 +424,7 @@ def get_flavor_name_id():
     # 下面的方法中我们首先通过获取url获取到所有的flavor的id，然后在根据每个id来构造新的url2，
     # 然后获取没有个flavor的Detal，最后将这些信息组织成data返回
     url = "http://192.168.188.132:8774/v2.1/flavors"
-    Token = getToken('admin')
+    Token = getToken("admin", "admin", "admin")
     # req=urllib2.Request(url)
     # req.add_header("Content-Type","application/json")
     # req.add_header("Accept","application/json")
@@ -605,14 +605,14 @@ def get_all_security_groups():
 #为选择安全组提供基本的参数
 def get_security_groups_name_id():
     url = "http://192.168.188.132:8774/v2.1/os-security-groups"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     response = json.loads(get_url(url, Token).read())
     security_groups_List = response["security_groups"]
     data = []
     for security_groups in security_groups_List:
         d={}
         d["id"]=security_groups["id"]
-        d["name="]=security_groups["name"]
+        d["name"]=security_groups["name"]
         data.append(d)
     return data
 #删除某一个安全组
@@ -621,6 +621,32 @@ def delete_a_security_groups(security_groups_id):
     Token=getToken()
     delete_url(url,Token)
     return render_template("main/ShowSecurityGroupsPage.html")
+
+#新建安全组规则
+def create_new_roule_for_security_group(security_groups_id):
+    url=url="http://192.168.188.132:9696/v2.0/os-security-group-rules"
+
+
+###################################################关于cinder的虚拟机操作#################################
+#为虚拟机添加卷
+def attach_volume_to_server(server_id):
+    url = "http://192.168.188.132:8774/v2.1/"+server_id+"/os-security-groups"
+    Token=getToken("admin","admin","admin")
+    form=AttachVolumeToServerForm()
+    name="为虚拟机添加卷"
+    data=get_volumelist()##########这个函数还没写
+    form.volumeId.choices=[(d["id"],d["name"]) for d in data]
+    if form.validate_on_submit():
+        values={
+    "volumeAttachment": {
+        "volumeId": form.volumeId.data,
+        "device": form.device.data
+    }
+}
+        headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
+        post_url(url,values,headers)
+        return redirect(url_for("main.show_server_detial",server_id=server_id))
+    return render_template("main/ServerAction.html",name=name,form=form)
 
 ######################################################service操作####################################
 #诊断虚拟机
@@ -638,7 +664,7 @@ def show_server_detial(server_id):
 @main.route("/GetServerList/<server_id>")
 def get_server_list(server_id):
     url="http://192.168.188.132:8774/v2.1/servers/"+server_id
-    # Token=getToken()
+    Token=getToken("admin","admin","admin")
     # response=json.loads(get_url(url,Token).read())
     ###########这里使用的指定的数据，后面在测试#########
     response={
@@ -739,6 +765,7 @@ def get_server_list(server_id):
         "user_id": "fake"
     }
 }
+    response=json.loads(get_url(url,Token).read())
     server=response["server"]
     data=[]
     d={}
@@ -776,14 +803,17 @@ def get_server_list(server_id):
     d["message"]="<ul>" \
                  "<li>主机名称:"+server["OS-EXT-SRV-ATTR:host"]+"</li>" \
                  "<li>主机id:"+server["hostId"]+"</li>" \
-                 "<li>主机状态:"+server["host_status"]+"</li>" \
                  "</ul>"
     data.append(d)
     d={}
     d["title"]=u"主机类型详细信息"
-    flavor=server["flavor"]
+    flavorid=server["flavor"]["id"]
+    url2="http://192.168.188.132:8774/v2.1/flavors/"+flavorid
+    print url2
+    flavor=json.loads(get_url(url2,Token).read())["flavor"]
+    print flavor
     flavor_message="<ul>" \
-                   "<li>名称:"+flavor["original_name"]+"</li>" \
+                   "<li>名称:"+flavor["name"]+"</li>" \
                    "<li>虚拟cpu数量:"+str(flavor["vcpus"])+"</li>" \
                    "<li>虚拟内存数量:"+str(flavor["ram"])+"</li>" \
                    "</ul>" \
@@ -791,7 +821,7 @@ def get_server_list(server_id):
                    "<ul>" \
                     "<li>磁盘结构:" + server["OS-DCF:diskConfig"] + "</li>" \
                     "<li>根磁盘大小:"+str(flavor["disk"])+"GB</li>" \
-                    "<li>临时磁盘大小:"+str(flavor["ephemeral"])+"GB</li>" \
+                    "<li>临时磁盘大小:"+str(flavor["OS-FLV-EXT-DATA:ephemeral"])+"GB</li>" \
                     "<li>交换磁盘大小:"+str(flavor["swap"])+"MB</li>" \
                     "</ul>"
     d["message"]=flavor_message
@@ -830,11 +860,11 @@ def show_all_servers():
 @main.route("/GetAllServerList")
 def get_all_server_data():
     data=[]
-    url="http://192.168.188.132:8774/v2.1/servers"
+    url="http://192.168.188.132:8774/v2.1/servers/detail"
     # Id=User.query.filter_by(username=current_user.username).first().id
     # ServerList=User_for_Server.query.filter_by(id=Id).ServerID
     #通过查询User和Server的关系数据库得到当前数据库的Server的ID,从而将这些Server从服务器中取出来
-    # Token=getToken("admin")
+    Token=getToken("admin","admin","admin")
     # for serverlist in ServerList:
 
     values ={
@@ -861,11 +891,30 @@ def get_all_server_data():
     # request.add_header("Accept", "application/json")
     # request.add_header("X-Auth-Token", Token)
     # response = urllib2.urlopen(request)
+    values=json.loads(get_url(url,Token).read())
     ServersList=values["servers"]
     for server in ServersList:
         d={}
         d["ServerName"]=server["name"]
         d["ServerID"]=server["id"]
+        if server["status"]=="ACTIVE":
+            status_message='<h5 style="color:green">ACTIVE</h4>'
+        elif server["status"]=="ERROR" or server["status"]=="DELETE":
+            status_message='<h5 style="color:red">'+server["status"]+'</h4>'
+        else:
+            status_message = '<h5 style="color:Gainsboro">' + server["status"] + '</h4>'
+
+        d["status"]=status_message
+        power_state={
+            0: "NOSTATE",
+            1: "RUNNING",
+            3: "PAUSED",
+            4: "SHUTDOWN",
+            6: "CRASHED",
+            7: "SUSPENDED"
+        }
+        d["power"]=power_state[server["OS-EXT-STS:power_state"]]
+        d["host"]=server["OS-EXT-SRV-ATTR:hypervisor_hostname"]
         # '<option value="' + 'create_new_server_image|' + d[ "ServerID"] + '" >新建虚拟机备份</option>' \  '<option value="' + 'suspend_server|' + d["ServerID"] + '" >挂起虚拟机</option>' \
         actionMessage='<select style="height:25px;width:160px;" onchange="actions(this)">  ' \
                       '<option value="menu" selected>action</option> ' \
@@ -873,7 +922,7 @@ def get_all_server_data():
                       '<option value="'+'add_float_ip|'+d["ServerID"]+'" >添加浮动ip</option>' \
                       '<option value="'+'delte_float_ip|'+d["ServerID"]+'" >删除浮动ip</option>' \
                       '<option value="' + 'Add_security_group|' + d[ "ServerID"] + '" >添加安全组</option>' \
-                      '<option value="' + 'delete_secuity_group|' + d[ "ServerID"] + '" >添加安全组</option>' \
+                      '<option value="' + 'delete_secuity_group|' + d[ "ServerID"] + '" >删除安全组</option>' \
                       '<option value="' + 'change_server_password|' + d[ "ServerID"] + '" >修改虚拟机密码</option>' \
                       '<option value="' + 'create_server_image|' + d[ "ServerID"] + '" >将虚拟机做成镜像</option>' \
                       '<option value="' + 'lock_server|' + d["ServerID"] + '" >锁定虚拟机</option>' \
@@ -893,7 +942,15 @@ def get_all_server_data():
                       '<option value="' + 'create_new_backup|' + d[ "ServerID"] + '" >新建虚拟机备份</option>' \
                       '<option value="' + 'suspend_server|' + d[ "ServerID"] + '" >挂起虚拟机</option>' \
                        '</select>'
-        d["actions"]=actionMessage
+        actionMessage2='<select style="height:25px;width:160px;" onchange="actions(this)">  ' \
+                      '<option value="menu" selected>action</option> ' \
+                      '<option value="'+'show_server_detial|'+d["ServerID"]+'">查看虚拟机详情</option> ' \
+                      '</select>'
+        if server["OS-EXT-STS:vm_state"] == "ERROR" or server["OS-EXT-STS:vm_state"] =="DELETED" :
+            d["actions"] = actionMessage2
+        else:
+            d["actions"] = actionMessage
+
         data.append(d)
 
     if request.method == 'GET':
@@ -964,18 +1021,17 @@ def create_new_servers():
 @main.route("/DeleteAServer/<ServerId>",methods=["DELETE"])
 def delete_a_server(ServerId):
     url = "http://192.168.188.132:8774/v2.1/servers/"+ServerId
-    Token = getToken("admin")
+    Token = getToken("admin","admin","admin")
     delete_url(url,Token)
     return render_template("main/ShowAllServerPage.html")
 
-def getToken():
-    return "2234234"
+
 ###############################下面是主要的关于server的操作##############
 #添加浮动ip
 @main.route("/Add_Float_Ip/<server_id>",methods=["POST","GET"])
 def add_float_ip(server_id):
     url="http://192.168.188.132:8774/v2.1/servers/"+server_id+"/action"
-    Token=getToken()
+    Token = getToken("admin", "admin", "admin")
     headers= headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
     form=AddFloatIpForm()
     name=u"添加浮动ip"
@@ -987,14 +1043,14 @@ def add_float_ip(server_id):
     }
 }
         post_url(url,values,headers)
-        return render_template("main/ShowAllServerPage.html")
+        return redirect(url_for("main.show_all_servers"))
     return render_template("main/ServerAction.html",form=form,name=name)
 
 #删除浮动ip
 @main.route("/Delete_Float_Ip/<server_id>",methods=["POST","GET"])
 def delte_float_ip(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
     form = DeleteFloatIpForm()
     name=u"删除浮动ip"
@@ -1005,17 +1061,18 @@ def delte_float_ip(server_id):
             }
         }
         post_url(url, values, headers)
-        return render_template("main/ShowAllServerPage.html")
+        return redirect(url_for("main.show_all_servers"))
     return render_template("main/ServerAction.html", form=form, name=name)
 
 #添加安全组
 @main.route("/Add_Security_Group/<server_id>",methods=["POST","GET"])
 def Add_security_group(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
     form = AddSecurityGroupForm()
     data=get_security_groups_name_id()
+    print data
     form.name.choices=[(d["name"],d["name"]) for d in data]
     name=u"添加安全组"
     if form.validate_on_submit():
@@ -1025,14 +1082,14 @@ def Add_security_group(server_id):
     }
 }
         post_url(url, values, headers)
-        return render_template("main/ShowAllServerPage.html")
+        return redirect(url_for("main.show_all_servers"))
     return render_template("main/ServerAction.html", form=form, name=name)
 
 #删除安全组
 @main.route("/Delete_Security_Group/<server_id>",methods=["POST","GET"])
 def delete_secuity_group(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
     form = DeleteSecurityGroupForm()
     name=u"删除安全组"
@@ -1043,14 +1100,14 @@ def delete_secuity_group(server_id):
             }
         }
         post_url(url, values, headers)
-        return render_template("main/ShowAllServerPage.html")
+        return redirect(url_for("main.show_all_servers"))
     return render_template("main/ServerAction.html", form=form, name=name)
 
 #修改虚拟机密码
 @main.route("/Change_Server_Password/<server_id>",methods=["POST","GET"])
 def change_server_password(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
     form = ChangeAdministrativePasswordForm()
     name=u"修改虚拟机密码"
@@ -1061,14 +1118,14 @@ def change_server_password(server_id):
     }
 }
         post_url(url, values, headers)
-        return render_template("main/ShowAllServerPage.html")
+        return redirect(url_for("main.show_all_servers"))
     return render_template("main/ServerAction.html", form=form, name=name)
 
 #新建虚拟机备份
 @main.route("/Create_New_Backup/<server_id>",methods=["POST","GET"])
 def create_new_backup(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
     form = CreateServerBackUpForm()
     name=u"新建虚拟机备份"
@@ -1080,14 +1137,14 @@ def create_new_backup(server_id):
     }
 }
         post_url(url, values, headers)
-        return render_template("main/ShowAllServerPage.html")##应该修改成查看备份详情
+        return redirect(url_for("main.show_all_servers"))##应该修改成查看备份详情
     return render_template("main/ServerAction.html", form=form, name=name)
 
 #将虚拟机做成镜像
 @main.route("/Create_Server_Image/<server_id>",methods=["POST","GET"])
 def create_server_image(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
     form = CreateServerImageForm()
     name=u"将虚拟机做成镜像"
@@ -1101,40 +1158,39 @@ def create_server_image(server_id):
     }
 }
         post_url(url, values, headers)
-        return render_template("main/ShowAllServerPage.html")##应该修改成查看镜像详情
+        return redirect(url_for("main.show_all_servers"))##应该修改成查看镜像详情
     return render_template("main/ServerAction.html", form=form, name=name)
 
 #锁定虚拟机
 @main.route("/Lock_Server/<server_id>",methods=["POST","GET"])
 def lock_server(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
 
     values = {
     "lock": "null"
 }
     post_url(url, values, headers)
-    return render_template("main/ShowAllServerPage.html")
+    return redirect(url_for("main.show_all_servers"))
 
 #暂停虚拟机
 @main.route("/Pause_Server/<server_id>",methods=["POST","GET"])
 def pause_server(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
 
     values = {
         "pause": "null"
     }
     post_url(url, values, headers)
-    return render_template("main/ShowAllServerPage.html")
-
+    return redirect(url_for("main.show_all_servers"))
 #重启虚拟机
 @main.route("/Reboot_Server/<server_id>",methods=["POST","GET"])
 def reboot_server(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
     form = RebootServerForm()
     name=u"重启虚拟机"
@@ -1145,7 +1201,7 @@ def reboot_server(server_id):
     }
 }
         post_url(url, values, headers)
-        return render_template("main/ShowAllServerPage.html")
+        return redirect(url_for("main.show_all_servers"))
     return render_template("main/ServerAction.html", form=form, name=name)
 
 #重构虚拟机
@@ -1157,7 +1213,7 @@ def rebuild_server(server_id):
 @main.route("/Resure_Server/<server_id>",methods=["POST","GET"])
 def resure_server(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
     form = ResureServerForm()
     name=u"救援虚拟机"
@@ -1169,20 +1225,22 @@ def resure_server(server_id):
     }
 }
         post_url(url, values, headers)
-        return render_template("main/ShowAllServerPage.html")
+        return redirect(url_for("main.show_all_servers"))
     return render_template("main/ServerAction.html", form=form, name=name)
 
 #更改虚拟机的规格
 @main.route("/Resize_Server/<server_id>",methods=["POST","GET"])
 def resize_server(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
     form = ChangeServerFlavorForm()
     data=get_flavor_name_id()
+    print data
     form.flavorRef.choices=[(d["id"],d["name"]) for d in data]
     name=u"更改虚拟机的规格"
     if form.validate_on_submit():
+        print type(form.flavorRef.data)
         values = {
     "resize" : {
         "flavorRef" : form.flavorRef.data,
@@ -1190,104 +1248,104 @@ def resize_server(server_id):
     }
 }
         post_url(url, values, headers)
-        return render_template("main/ShowAllServerPage.html")
+        return redirect(url_for("main.show_all_servers"))
     return render_template("main/ServerAction.html", form=form, name=name)
 
 #恢复虚拟机的运行
 @main.route("/Resume_Server/<server_id>",methods=["POST","GET"])
 def resume_server(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
 
     values = {
         "resume": "null"
     }
-    post_url(url, values, headers)
-    return render_template("main/ShowAllServerPage.html")
+    post_url(url,values, headers)
+    return redirect(url_for("main.show_all_servers"))
 
 #恢复虚拟机的规格修改
 @main.route("/Revert_Resize_Server/<server_id>",methods=["POST","GET"])
 def revert_resize_server(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
 
     values = {
         "revertResize": "null"
     }
     post_url(url, values, headers)
-    return render_template("main/ShowAllServerPage.html")
+    return redirect(url_for("main.show_all_servers"))
 
 #启动虚拟机
 @main.route("/Start_Server/<server_id>",methods=["POST","GET"])
 def start_server(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
 
     values = {
         "os-start": "null"
     }
     post_url(url, values, headers)
-    return render_template("main/ShowAllServerPage.html")
+    return redirect(url_for("main.show_all_servers"))
 
 #停止虚拟机
 @main.route("/Stop_Server/<server_id>",methods=["POST","GET"])
 def stop_server(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
 
     values = {
         "os-stop": "null"
     }
     post_url(url, values, headers)
-    return render_template("main/ShowAllServerPage.html")
+    return redirect(url_for("main.show_all_servers"))
 
 #挂起虚拟机
 @main.route("/Suspend_Server/<server_id>",methods=["POST","GET"])
 def suspend_server(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
 
     values = {
         "suspend": "null"
     }
     post_url(url, values, headers)
-    return render_template("main/ShowAllServerPage.html")
+    return redirect(url_for("main.show_all_servers"))
 
 #解锁虚拟机
 @main.route("/Unlock_Server/<server_id>",methods=["POST","GET"])
 def unlock_server(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
     values = {
     "unlock": "null"
 }
     post_url(url, values, headers)
-    return render_template("main/ShowAllServerPage.html")
+    return redirect(url_for("main.show_all_servers"))
 
 #解除暂停
 @main.route("/Unpause_Server/<server_id>",methods=["POST","GET"])
 def unpause_server(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
 
     values = {
         "unpause": "null"
     }
     post_url(url, values, headers)
-    return render_template("main/ShowAllServerPage.html")
+    return redirect(url_for("main.show_all_servers"))
 
 #给虚拟机添加固定的ip
 @main.route("/Add_Fixed_Ip_Server/<server_id>",methods=["POST","GET"])
 def add_fixed_ip_server(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
     form = AddFixedIpForm()
     data=get_network_name_id()#这个函数还没写
@@ -1300,14 +1358,14 @@ def add_fixed_ip_server(server_id):
     }
 }
         post_url(url, values, headers)
-        return render_template("main/ShowAllServerPage.html")
+        return redirect(url_for("main.show_all_servers"))
     return render_template("main/ServerAction.html", form=form, name=name)
 
 #删除虚拟机的固定ip
 @main.route("/Delete_Fixed_Ip_Server/<server_id>",methods=["POST","GET"])
 def delete_fixed_ip_server(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
     form = DeleteFixedIpForm()
     name=u"删除虚拟机的固定ip"
@@ -1318,27 +1376,27 @@ def delete_fixed_ip_server(server_id):
     }
 }
         post_url(url, values, headers)
-        return render_template("main/ShowAllServerPage.html")
+        return redirect(url_for("main.show_all_servers"))
     return render_template("main/ServerAction.html", form=form, name=name)
 
 #强制删除虚拟机
 @main.route("/Force_Delete_Server/<server_id>",methods=["POST","GET"])
 def force_delete_server(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
 
     values = {
         "forceDelete": "null"
     }
     post_url(url, values, headers)
-    return render_template("main/ShowAllServerPage.html")
+    return redirect(url_for("main.show_all_servers"))
 
 #显示虚拟机的控制台输出
 @main.route("/Get_Console_Output/<server_id>",methods=["POST","GET"])
 def get_console_output(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
 
     values = {
@@ -1355,7 +1413,7 @@ def get_console_output(server_id):
 @main.route("/Get_Vnc_Console/<server_id>",methods=["POST","GET"])
 def get_vnc_console(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
 
     values = {
@@ -1372,7 +1430,7 @@ def get_vnc_console(server_id):
 @main.route("/Evacute_server/<server_id>",methods=["POST","GET"])
 def evacuate_server(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
 
     values = {
@@ -1383,27 +1441,27 @@ def evacuate_server(server_id):
     }
 }
     post_url(url, values, headers)
-    return render_template("main/ShowAllServerPage.html")
+    return redirect(url_for("main.show_all_servers"))
 
 #故障转储
 @main.route("/Trigger_Crash_dump/<server_id>",methods=["POST","GET"])
 def trigger_crash_dump(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
 
     values = {
     "trigger_crash_dump": "null"
 }
     post_url(url, values, headers)
-    return render_template("main/ShowAllServerPage.html")
+    return redirect(url_for("main.show_all_servers"))
 
 
 ##############################################管理员可执行的server action################
 #平台冷迁移
 def migrate_server(server_id):
     url = "http://192.168.188.132:8774/v2.1/servers/" + server_id + "/action"
-    Token = getToken()
+    Token = getToken("admin", "admin", "admin")
     headers = headers = {"Content-Type": "application/json", "Accept": "application/json", "X-Auth-Token": Token}
     form=MigrateServerForm()
     ##这里将hosts的name添加到choices

@@ -38,6 +38,9 @@
         <tr>
          <th data-field="ServerName">虚拟机名称</th>
          <th data-field="ServerID">虚拟机ID</th>
+         <th data-field="status">状态</th>
+         <th data-field="power">电池状态</th>
+         <th data-field="host">所在的主机</th>
          <th data-field="actions">操作</th>
         </tr>
         </thead>
@@ -204,6 +207,11 @@ var ButtonInit = function () {
     return oInit;
 };
 </script>
+
+<script language="javascript">
+setTimeout("self.location.reload();",60000);
+</script>
+
 <script type="text/javascript">
    function actions(value){
     var server=window.location.href
@@ -226,27 +234,27 @@ var ButtonInit = function () {
     {
     case "show_server_detial": window.location.href=x+"/Show_Server_Detial/"+valueList[1];break;
     case "add_float_ip": window.location.href=x+"/Add_Float_Ip/"+valueList[1];break;
-    case "delte_float_ip": window.location.href="http://www.baidu.com";break;
-    case "Add_security_group": window.location.href="http://www.baidu.com";break;
-    case "delete_secuity_group": window.location.href="http://www.baidu.com";break;
-    case "change_server_password": window.location.href="http://www.baidu.com";break;
-    case "create_server_image": window.location.href="http://www.baidu.com";break;
-    case "lock_server": window.location.href="http://www.baidu.com";break;
-    case "pause_server": window.location.href="http://www.baidu.com";break;
-    case "reboot_server": window.location.href="http://www.baidu.com";break;
-    case "rebuild_server": window.location.href="http://www.baidu.com";break;
-    case "resure_server": window.location.href="http://www.baidu.com";break;
-    case "resize_server": window.location.href="http://www.baidu.com";break;
-    case "resume_server": window.location.href="http://www.baidu.com";break;
-    case "revert_resize_server": window.location.href="http://www.baidu.com";break;
-    case "start_server": window.location.href="http://www.baidu.com";break;
-    case "stop_server": window.location.href="http://www.baidu.com";break;
-    case "unlock_server": window.location.href="http://www.baidu.com";break;
-    case "unpause_server": window.location.href="http://www.baidu.com";break;
-    case "add_fixed_ip_server": window.location.href="http://www.baidu.com";break;
-    case "delete_fixed_ip_server": window.location.href="http://www.baidu.com";break;
-    case "create_new_server_image": window.location.href="http://www.baidu.com";break;
-    case "suspend_server": window.location.href="http://www.baidu.com";break;
+    case "delte_float_ip": window.location.href=x+"/Delete_Float_Ip/"+valueList[1];break;
+    case "Add_security_group": window.location.href=x+"/Add_Security_Group/"+valueList[1];break;
+    case "delete_secuity_group": window.location.href=x+"/Delete_Security_Group/"+valueList[1];break;
+    case "change_server_password": window.location.href=x+"/Change_Server_Password/"+valueList[1];break;
+    case "create_server_image": window.location.href=x+"/Create_Server_Image/"+valueList[1];break;
+    case "lock_server": window.location.href=x+"/Lock_Server/"+valueList[1];break;
+    case "pause_server": window.location.href=x+"/Pause_Server/"+valueList[1];break;
+    case "reboot_server": window.location.href=x+"/Reboot_Server/"+valueList[1];break;
+    case "rebuild_server": window.location.href=x+"/Rebuild_Server/"+valueList[1];break;
+    case "resure_server": window.location.href=x+"/Resure_Server/"+valueList[1];break;
+    case "resize_server": window.location.href=x+"/Resize_Server/"+valueList[1];break;
+    case "resume_server": window.location.href=x+"/Resume_Server/"+valueList[1];break;
+    case "revert_resize_server": window.location.href=x+"/Revert_Resize_Server/"+valueList[1];break;
+    case "start_server": window.location.href=x+"/Start_Server/"+valueList[1];break;
+    case "stop_server": window.location.href=x+"/Stop_Server/"+valueList[1];break;
+    case "unlock_server": window.location.href=x+"/Unlock_Server/"+valueList[1];break;
+    case "unpause_server": window.location.href=x+"/Unpause_Server/"+valueList[1];break;
+    case "add_fixed_ip_server": window.location.href=x+"/Add_Fixed_Ip_Server/"+valueList[1];break;
+    case "delete_fixed_ip_server": window.location.href=x+"/Delete_Fixed_Ip_Server/"+valueList[1];break;
+    case "create_new_server_image": window.location.href=x+"/Create_New_Server_Image/"+valueList[1];break;
+    case "suspend_server": window.location.href=x+"/Suspend_Server/"+valueList[1];break;
     default:
 
     }

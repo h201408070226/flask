@@ -116,7 +116,18 @@ class CreateNewSecurityGroupsForm(FlaskForm):
     description=StringField(u"请填写关于安全组的描述",validators=[Required()])
     submit=SubmitField(u"提交")
 
-################下面是为了实现server的action二新建的Form###########
+#新建安全组规则
+class CreateNewSecurityGroupRoules(FlaskForm):
+    parent_group_id=SelectField(u"请选择要添加的安全组",validators=[Required()])
+
+
+#为虚拟机添加卷
+class AttachVolumeToServerForm(FlaskForm):
+    volumeId=SelectField(u"请选择要添加的卷",validators=[Required()])
+    device=StringField(u'请填写设备的名称',validators=[Required()])
+    submit = SubmitField(u"提交")
+
+################下面是为了实现server的action新建的Form###########
 ##添加浮动ip
 class AddFloatIpForm(FlaskForm):
     address=StringField("address",validators=[Required(),IPAddress()])
@@ -173,7 +184,7 @@ class ResureServerForm(FlaskForm):
 #修改云主机类型
 class ChangeServerFlavorForm(FlaskForm):
     flavorRef=SelectField(u"请选择云主机类型",validators=[Required()])
-    diskConfig=SelectField(u"请选择diskConfig类型",validators=[Required()],choices=[("AUTO","AUTO"),("AUTO","AUTO")],default="AUTO")
+    diskConfig=SelectField(u"请选择diskConfig类型",validators=[Required()],choices=[("AUTO","AUTO"),("MANUAL","MANUAL")],default="AUTO")
     submit = SubmitField(u"提交更改数据")
 
 #添加固定的ip
